@@ -1,0 +1,89 @@
+version: "3.8"
+
+services:
+  eureka-server:
+    image: eureka-server
+    build: C:\Spring\workspace-spring\eureka-server
+    ports:
+      - 8761:8761
+  enseignant-service:
+    image: enseignant-service
+    build: C:\Spring\workspace-spring\Enseignant
+    restart: always
+    ports:
+      - 8081:8081
+    depends_on:
+      - eureka-server
+      - mysql-server
+    environment:
+      configUrl: config-server
+      eurekaUrl: eureka-server
+      mysqlUrl: mysql-server
+      mysqlPwd: test
+  mysql-server:
+    image: mysql
+    environment:
+      MYSQL_DATABASE: enseignantdb
+      MYSQL_ROOT_PASSWORD: test
+  etudiant-service:
+    image: etudiant-service
+    build: C:\Spring\workspace-spring\Etudiant
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      eurekaUrl: eureka-server
+      configUrl: config-server
+    depends_on:
+      - eureka-server
+  matiere-service:
+    image: matiere-service
+    build: C:\Spring\workspace-spring\Matiere
+    restart: always
+    ports:
+      - 8082:8082
+    environment:
+      eurekaUrl: eureka-server
+      configUrl: config-server
+    depends_on:
+      - eureka-server
+  classe-service:
+    image: classe-service
+    build: C:\Users\medkh\Desktop\khalil\Tests\classe
+    restart: always
+    ports:
+      - 8085:8085
+    environment:
+      MONGO_URL: mongodb://mongo-server:27017/classDB
+      NODE_ENV: production
+    depends_on:
+      - eureka-server
+      - mongo-server
+  mongo-server:
+    image: mongo
+    environment:
+      MONGO_INITDB_DATABASE: classDB
+  config-server:
+    image: config-server
+    build: C:\Spring\workspace-spring\ConfigServer
+    command: --spring.profiles.active=native --spring.cloud.config.server.native.searchLocations=/config
+    restart: always
+    ports:
+      - 8888:8888
+    volumes:
+      - type: bind
+        source: C:\Spring\workspace-spring\ConfigServer\src\main\resources\centralRepo
+        target: /config
+    environment:
+      eurekaUrl: eureka-server
+    depends_on:
+      - eureka-server
+  zuul-gateway:
+    image: zuul-gateway-filter
+    build: C:\Spring\workspace-spring\zuul-gateway
+    ports:
+      - 8762:8762
+    environment:
+      eurekaUrl: eureka-server
+    depends_on:
+      - eureka-server
